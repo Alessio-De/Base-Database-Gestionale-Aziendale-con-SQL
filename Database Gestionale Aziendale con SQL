@@ -1,0 +1,106 @@
+-- Creazione del database
+CREATE DATABASE GestioneAziendale;
+USE GestioneAziendale;
+
+-- Tabella Dipendenti
+CREATE TABLE Dipendenti (
+    ID_Dipendente INT PRIMARY KEY AUTO_INCREMENT,
+    Nome VARCHAR(50) NOT NULL,
+    Cognome VARCHAR(50) NOT NULL,
+    Data_Nascita DATE,
+    Email VARCHAR(100) UNIQUE,
+    Telefono VARCHAR(20),
+    Dipartimento VARCHAR(50),
+    Data_Assunzione DATE,
+    Stipendio DECIMAL(10,2)
+);
+
+-- Tabella Clienti
+CREATE TABLE Clienti (
+    ID_Cliente INT PRIMARY KEY AUTO_INCREMENT,
+    RagioneSociale VARCHAR(100) NOT NULL,
+    PartitaIVA VARCHAR(20) UNIQUE,
+    Indirizzo VARCHAR(200),
+    Citta VARCHAR(50),
+    CAP VARCHAR(10),
+    Email VARCHAR(100),
+    Telefono VARCHAR(20)
+);
+
+-- Tabella Prodotti
+CREATE TABLE Prodotti (
+    ID_Prodotto INT PRIMARY KEY AUTO_INCREMENT,
+    Nome_Prodotto VARCHAR(100) NOT NULL,
+    Descrizione TEXT,
+    Prezzo DECIMAL(10,2) NOT NULL,
+    Quantita_Magazzino INT DEFAULT 0,
+    Categoria VARCHAR(50),
+    Fornitore VARCHAR(100)
+);
+
+-- Tabella Ordini
+CREATE TABLE Ordini (
+    ID_Ordine INT PRIMARY KEY AUTO_INCREMENT,
+    ID_Cliente INT,
+    Data_Ordine DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Stato_Ordine VARCHAR(20),
+    Totale DECIMAL(10,2),
+    FOREIGN KEY (ID_Cliente) REFERENCES Clienti(ID_Cliente)
+);
+
+-- Tabella Dettagli Ordini
+CREATE TABLE Dettagli_Ordini (
+    ID_Dettaglio INT PRIMARY KEY AUTO_INCREMENT,
+    ID_Ordine INT,
+    ID_Prodotto INT,
+    Quantita INT NOT NULL,
+    Prezzo_Unitario DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (ID_Ordine) REFERENCES Ordini(ID_Ordine),
+    FOREIGN KEY (ID_Prodotto) REFERENCES Prodotti(ID_Prodotto)
+);
+
+-- Tabella Fornitori
+CREATE TABLE Fornitori (
+    ID_Fornitore INT PRIMARY KEY AUTO_INCREMENT,
+    RagioneSociale VARCHAR(100) NOT NULL,
+    PartitaIVA VARCHAR(20) UNIQUE,
+    Indirizzo VARCHAR(200),
+    Citta VARCHAR(50),
+    Email VARCHAR(100),
+    Telefono VARCHAR(20)
+);
+
+-- Inserimento dati di esempio nei Dipendenti
+INSERT INTO Dipendenti (Nome, Cognome, Data_Nascita, Email, Telefono, Dipartimento, Data_Assunzione, Stipendio)
+VALUES 
+('Mario', 'Rossi', '1980-05-15', 'mario.rossi@azienda.it', '3331234567', 'Vendite', '2020-01-15', 35000.00),
+('Laura', 'Bianchi', '1985-08-22', 'laura.bianchi@azienda.it', '3337654321', 'Marketing', '2019-03-20', 38000.00);
+
+-- Inserimento dati di esempio nei Clienti
+INSERT INTO Clienti (RagioneSociale, PartitaIVA, Indirizzo, Citta, CAP, Email, Telefono)
+VALUES 
+('Tech Solutions SRL', 'IT12345678901', 'Via Roma 123', 'Milano', '20100', 'info@techsolutions.it', '02123456'),
+('Digital Services SpA', 'IT98765432101', 'Via Venezia 456', 'Roma', '00100', 'info@digitalservices.it', '06654321');
+
+-- Vista per riepilogo ordini per cliente
+CREATE VIEW Riepilogo_Ordini_Cliente AS
+SELECT 
+    c.RagioneSociale,
+    COUNT(o.ID_Ordine) as Numero_Ordini,
+    SUM(o.Totale) as Totale_Ordini
+FROM Clienti c
+LEFT JOIN Ordini o ON c.ID_Cliente = o.ID_Cliente
+GROUP BY c.ID_Cliente;
+
+-- Procedura per aggiornare il magazzino dopo un ordine
+DELIMITER //
+CREATE PROCEDURE AggiornaQuantitaMagazzino(
+    IN prodotto_id INT,
+    IN quantita_venduta INT
+)
+BEGIN
+    UPDATE Prodotti 
+    SET Quantita_Magazzino = Quantita_Magazzino - quantita_venduta
+    WHERE ID_Prodotto = prodotto_id;
+END //
+DELIMITER ;
